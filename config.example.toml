@@ -1,0 +1,12 @@
+# Global settings
+secret_key = "your-secret-key-here"
+reload_interval = 30
+
+[deploy]
+
+[deploy."someusername/some-repo#some-branch"]
+script = "/some/path/to/deployment/script.sh"
+
+
+[deploy."someusername-2/some-repo-2#some-branch-2"]
+script = "/some/path/to/deployment/script-2.sh"
