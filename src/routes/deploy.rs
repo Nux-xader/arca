@@ -1,5 +1,6 @@
 use crate::state::{AppState, WebhookPayload};
 use axum::{extract::State, Json};
+use std::path::Path;
 use std::sync::Arc;
 use tokio::process::Command;
 use tracing::{error, info, warn};
@@ -7,11 +8,28 @@ use tracing::{error, info, warn};
 // Execute deployment script asynchronously
 fn execute_script(script_path: String, repo_info: String) {
     tokio::spawn(async move {
+        let script_dir = match Path::new(&script_path).parent() {
+            Some(path) => path,
+            None => {
+                error!(
+                    "Could not determine parent directory for script: {}",
+                    script_path
+                );
+                return;
+            }
+        };
+
         info!(
             "Executing deployment script: {} for {}",
             script_path, repo_info
         );
-        match Command::new("sh").arg("-c").arg(&script_path).spawn() {
+
+        match Command::new("sh")
+            .arg("-c")
+            .arg(&script_path)
+            .current_dir(script_dir)
+            .spawn()
+        {
             Ok(mut child) => {
                 if let Ok(status) = child.wait().await {
                     if status.success() {
