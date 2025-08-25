@@ -1,5 +1,11 @@
 use crate::state::{AppState, WebhookPayload};
-use axum::{extract::State, Json};
+use axum::{
+    body::Body,
+    extract::State,
+    http::{HeaderMap, Response},
+    response::IntoResponse,
+    Json,
+};
 use std::path::Path;
 use std::sync::Arc;
 use tokio::process::Command;
@@ -64,8 +70,16 @@ fn parse_webhook_info(payload: &WebhookPayload) -> Option<(&str, &str)> {
 // Deploy endpoint handler for POST requests (webhooks)
 pub async fn handler(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Json(payload): Json<WebhookPayload>,
-) -> &'static str {
+) -> impl IntoResponse {
+    if let Some(event) = headers.get("X-GitHub-Event") {
+        if event == "ping" {
+            info!("Received GitHub ping event");
+            return Ok(Response::new(Body::empty()));
+        }
+    }
+
     info!("Received webhook payload: {:?}", payload);
 
     if let Some((repo, branch)) = parse_webhook_info(&payload) {
@@ -85,5 +99,6 @@ pub async fn handler(
     } else {
         warn!("Failed to parse webhook payload");
     }
-    "ok"
+
+    Ok("ok")
 }
