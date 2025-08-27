@@ -4,7 +4,7 @@ use std::{collections::HashMap, io, path::PathBuf, sync::Arc, time::Duration};
 use tokio::{
     fs,
     sync::RwLock,
-    time::{interval, MissedTickBehavior},
+    time::{MissedTickBehavior, interval},
 };
 use tracing::{error, info, warn};
 
@@ -36,7 +36,7 @@ pub async fn load_config(config_path: PathBuf) -> Result<Config, Error> {
                 deploy: HashMap::new(),
             })
         }
-        Err(e) => Err(Error::Io(e)),
+        Err(e) => Err(Error::Io(e.to_string())),
     }
 }
 
@@ -61,7 +61,7 @@ pub async fn config_reload_task(
                 }
             }
             Err(e) => {
-                error!("Failed to reload configuration: {}", e);
+                error!("Failed to reload configuration: {:?}", e);
             }
         }
     }

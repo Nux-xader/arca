@@ -9,7 +9,7 @@ use std::{
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
     /// The IP address to bind the server to.
-    #[arg(short, long, default_value_t = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)))]
+    #[arg(long, default_value_t = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)))]
     pub host: IpAddr,
 
     /// The port to listen on.

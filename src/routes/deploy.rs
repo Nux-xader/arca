@@ -1,10 +1,9 @@
 use crate::state::{AppState, WebhookPayload};
 use axum::{
+    Json,
     body::Body,
     extract::State,
     http::{HeaderMap, Response},
-    response::IntoResponse,
-    Json,
 };
 use std::path::Path;
 use std::sync::Arc;
@@ -67,12 +66,23 @@ fn parse_webhook_info(payload: &WebhookPayload) -> Option<(&str, &str)> {
     Some((repo, branch))
 }
 
-// Deploy endpoint handler for POST requests (webhooks)
+/// Deploy endpoint handler for POST requests (webhooks)
+#[utoipa::path(
+    post,
+    path = "/api/deploy",
+    request_body = WebhookPayload,
+    responses(
+        (status = 200, description = "Deployment started successfully"),
+        (status = 400, description = "Bad request"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn handler(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
     Json(payload): Json<WebhookPayload>,
-) -> impl IntoResponse {
+) -> Result<Response<Body>, axum::http::StatusCode> {
     if let Some(event) = headers.get("X-GitHub-Event") {
         if event == "ping" {
             info!("Received GitHub ping event");
@@ -100,5 +110,5 @@ pub async fn handler(
         warn!("Failed to parse webhook payload");
     }
 
-    Ok("ok")
+    Ok(Response::new(Body::from("ok")))
 }

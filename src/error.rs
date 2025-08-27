@@ -1,45 +1,41 @@
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use std::{fmt, io};
-use tracing::error;
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-// --- Custom Error Type ---
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case", tag = "type")]
 pub enum Error {
-    Io(io::Error),
-    Toml(toml::de::Error),
+    #[error("I/O error: {0}")]
+    Io(String),
+    #[error("Configuration error: {0}")]
+    Config(String),
+    #[error("Missing configuration key: {0}")]
     MissingKey(&'static str),
 }
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Error::Io(e) => write!(f, "I/O error: {}", e),
-            Error::Toml(e) => write!(f, "TOML parsing error: {}", e),
-            Error::MissingKey(key) => write!(f, "Configuration key '{}' not found", key),
-        }
-    }
-}
-
-impl std::error::Error for Error {}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Error::Io(err)
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Self {
+        Error::Io(err.to_string())
     }
 }
 
 impl From<toml::de::Error> for Error {
     fn from(err: toml::de::Error) -> Self {
-        Error::Toml(err)
+        Error::Config(err.to_string())
     }
 }
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        error!("An internal error occurred: {}", self);
-        (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response()
+        let status = match self {
+            Error::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::Config(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::MissingKey(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        (status, Json(self)).into_response()
     }
 }

@@ -41,7 +41,9 @@ async fn main() -> Result<(), Error> {
     let listener = TcpListener::bind(addr).await?;
     info!("Server listening on http://{}", addr);
 
-    axum::serve(listener, app).await.map_err(Error::Io)?;
+    axum::serve(listener, app)
+        .await
+        .map_err(|e| Error::Io(e.to_string()))?;
 
     Ok(())
 }
