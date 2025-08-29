@@ -4,9 +4,14 @@ reload_interval = 30
 
 [deploy]
 
-[deploy."someusername/some-repo#some-branch"]
-script = "/some/path/to/deployment/script.sh"
+[deploy."someusername/some-repo#main"]
+service_name = "some-service-1"
 
+[deploy."someusername/some-repo#develop"]
+service_name = "some-service-2"
 
-[deploy."someusername-2/some-repo-2#some-branch-2"]
-script = "/some/path/to/deployment/script-2.sh"
+[deploy."myorg/frontend#production"]
+service_name = "some-serv-3"
+
+[deploy."myorg/backend#staging"]
+service_name = "some-serv-4"

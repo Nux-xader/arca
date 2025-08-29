@@ -5,63 +5,14 @@ use axum::{
     extract::State,
     http::{HeaderMap, Response},
 };
-use std::path::Path;
 use std::sync::Arc;
 use tokio::process::Command;
 use tracing::{error, info, warn};
 
-// Execute deployment script asynchronously
-fn execute_script(script_path: String, repo_info: String) {
-    tokio::spawn(async move {
-        let script_dir = match Path::new(&script_path).parent() {
-            Some(path) => path,
-            None => {
-                error!(
-                    "Could not determine parent directory for script: {}",
-                    script_path
-                );
-                return;
-            }
-        };
-
-        info!(
-            "Executing deployment script: {} for {}",
-            script_path, repo_info
-        );
-
-        match Command::new("sh")
-            .arg("-c")
-            .arg(&script_path)
-            .current_dir(script_dir)
-            .spawn()
-        {
-            Ok(mut child) => {
-                if let Ok(status) = child.wait().await {
-                    if status.success() {
-                        info!("Deployment script completed successfully for {}", repo_info);
-                    } else {
-                        error!(
-                            "Deployment script failed with status: {} for {}",
-                            status, repo_info
-                        );
-                    }
-                } else {
-                    error!("Failed to wait for deployment script for {}", repo_info);
-                }
-            }
-            Err(e) => {
-                error!(
-                    "Failed to spawn deployment script '{}': {} for {}",
-                    script_path, e, repo_info
-                );
-            }
-        }
-    });
-}
-
 // Parse webhook payload and extract repository info without allocation
 fn parse_webhook_info(payload: &WebhookPayload) -> Option<(&str, &str)> {
-    let branch = payload.ref_name.strip_prefix("refs/heads/")?;
+    let ref_name = payload.ref_name.as_ref()?;
+    let branch = ref_name.strip_prefix("refs/heads/")?;
     let repo = &payload.repository.full_name;
     Some((repo, branch))
 }
@@ -99,10 +50,45 @@ pub async fn handler(
         let deploy_config = state.config.read().await;
         if let Some(deploy_entry) = deploy_config.get(&config_key) {
             info!(
-                "Found matching config for {}, executing script: {}",
-                config_key, deploy_entry.script
+                "Found matching config for {}, executing command: {}",
+                config_key, deploy_entry.service_name
             );
-            execute_script(deploy_entry.script.clone(), config_key);
+
+            let output_result = Command::new("pm2")
+                .arg("restart")
+                .arg(deploy_entry.service_name.clone())
+                .output()
+                .await;
+
+            match output_result {
+                Ok(output) => {
+                    let stdout = String::from_utf8_lossy(&output.stdout);
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+
+                    if output.status.success() {
+                        if !stdout.is_empty() {
+                            info!("stdout:\n{}", stdout);
+                        }
+                        if !stderr.is_empty() {
+                            info!("stderr:\n{}", stderr);
+                        }
+                    } else {
+                        error!(
+                            "Failed restart service {}, with status: {}",
+                            deploy_entry.service_name, output.status
+                        );
+                        if !stdout.is_empty() {
+                            error!("stdout:\n{}", stdout);
+                        }
+                        if !stderr.is_empty() {
+                            error!("stderr:\n{}", stderr);
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!("Failed restart {} : {}", deploy_entry.service_name, e);
+                }
+            }
         } else {
             info!("No matching config found for: {}", config_key);
         }

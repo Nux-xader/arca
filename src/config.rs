@@ -18,7 +18,7 @@ pub struct Config {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 pub struct DeployEntry {
-    pub script: String,
+    pub service_name: String,
 }
 
 // Load configuration from TOML file

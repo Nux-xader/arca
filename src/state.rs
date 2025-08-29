@@ -14,7 +14,7 @@ pub struct AppState {
 #[serde(rename_all = "snake_case")]
 pub struct WebhookPayload {
     #[serde(rename = "ref")]
-    pub ref_name: String,
+    pub ref_name: Option<String>,
     pub repository: Repository,
 }
 
