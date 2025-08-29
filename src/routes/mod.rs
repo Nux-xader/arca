@@ -1,7 +1,7 @@
 use crate::state::AppState;
 use axum::{
     Router, middleware as axum_middleware,
-    routing::{any, post},
+    routing::{any, get, post},
 };
 use std::sync::Arc;
 use tower::ServiceBuilder;
@@ -21,6 +21,7 @@ struct ApiDoc;
 pub mod deploy;
 pub mod echo;
 pub mod middleware;
+pub mod logs;
 
 pub fn create_router(state: Arc<AppState>) -> Router {
     let api_routes = Router::new().nest(
@@ -28,6 +29,7 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         Router::new()
             .route("/echo", any(echo::handler))
             .route("/deploy", post(deploy::handler))
+            .route("/logs/:service_name", get(logs::handler))
             .layer(ServiceBuilder::new().layer(CorsLayer::permissive()).layer(
                 axum_middleware::from_fn_with_state(state.clone(), middleware::check_auth),
             )),

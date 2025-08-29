@@ -19,3 +19,5 @@ clap = { version = "4.5.4", features = ["derive"] }
 utoipa = { version = "4.2.3", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "7.1.0", features = ["axum"] }
 thiserror = "1.0"
+tokio-util = { version = "0.7.16", features = ["codec"] }
+futures-util = "0.3.31"
