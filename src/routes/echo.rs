@@ -3,6 +3,7 @@ use axum::{
     http::{Request, StatusCode},
     response::Response,
 };
+use tracing::info;
 
 /// Echo endpoint
 #[utoipa::path(
@@ -44,6 +45,7 @@ pub async fn handler(req: Request<Body>) -> Response {
         }
     }
 
+    info!(response);
     Response::new(Body::from(response))
 }
 
