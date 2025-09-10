@@ -11,9 +11,14 @@ use tokio_util::codec::{FramedRead, LinesCodec};
 
 pub async fn handler(
     Path(service_name): Path<String>,
+    Path(lines): Path<i16>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let mut cmd = Command::new("pm2");
-    cmd.arg("logs").arg(service_name).arg("--raw");
+    cmd.arg("logs")
+        .arg("--lines")
+        .arg(lines.to_string())
+        .arg(service_name)
+        .arg("--raw");
 
     let mut child = cmd
         .stdout(std::process::Stdio::piped())
