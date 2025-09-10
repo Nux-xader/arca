@@ -10,8 +10,7 @@ use tokio::process::Command;
 use tokio_util::codec::{FramedRead, LinesCodec};
 
 pub async fn handler(
-    Path(service_name): Path<String>,
-    Path(lines): Path<i16>,
+    Path((service_name, lines)): Path<(String, i16)>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let mut cmd = Command::new("pm2");
     cmd.arg("logs")
