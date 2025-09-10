@@ -29,7 +29,7 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         Router::new()
             .route("/echo", any(echo::handler))
             .route("/deploy", post(deploy::handler))
-            .route("/logs/:service_name", get(logs::handler))
+            .route("/logs/:service_name/:lines", get(logs::handler))
             .layer(ServiceBuilder::new().layer(CorsLayer::permissive()).layer(
                 axum_middleware::from_fn_with_state(state.clone(), middleware::check_auth),
             )),
